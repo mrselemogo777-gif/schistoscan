@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS
+.DS_Store
+*.log
+
+# Backups (local only)
+app_v1_working.py
+services_v1_working/
+ui_v1_working/
