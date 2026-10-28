@@ -1,13 +1,15 @@
-name: Keep Streamlit App Awake
-
+name: Keep Streamlit apps awake
 on:
   schedule:
-    - cron: '0 */12 * * *'
+    - cron: '0 */8 * * *' # Every 8 hours, under the 12-hour sleep threshold
   workflow_dispatch:
 
 jobs:
-  wake-up:
+  keep-alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping SchistoScan
-        run: curl -s -o /dev/null https://schistoscan.streamlit.app/
+      - uses: gpenessot/streamlit-keep-alive@v1
+        with:
+          app-urls: |
+            https://pula-watch.streamlit.app
+            https://schistoscan.streamlit.app
