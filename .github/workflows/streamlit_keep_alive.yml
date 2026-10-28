@@ -1,15 +1,55 @@
-name: Keep Streamlit apps awake
+name: Keep Streamlit Apps Awake
+
 on:
   schedule:
-    - cron: '0 */8 * * *' # Every 8 hours, under the 12-hour sleep threshold
+    - cron: '0 */6 * * *'  # Every 6 hours
   workflow_dispatch:
 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
     steps:
-      - uses: gpenessot/streamlit-keep-alive@v1
-        with:
-          app-urls: |
-            https://pula-watch.streamlit.app
-            https://schistoscan.streamlit.app
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium
+          playwright install-deps
+
+      - name: Wake Streamlit Apps
+        run: |
+          cat > wake.py << 'EOF'
+          import asyncio
+          from playwright.async_api import async_playwright
+
+          URLS = [
+              "https://pula-watch.streamlit.app/",
+              "https://schistoscan.streamlit.app/",
+              "https://kcb-copper-screening.streamlit.app/",
+          ]
+
+          async def visit(page, url):
+              print(f"Visiting: {url}")
+              await page.goto(url, wait_until="domcontentloaded", timeout=120_000)
+              await page.wait_for_timeout(5000)
+              wake_btn = page.get_by_role("button", name="Yes, get this app back up!")
+              if await wake_btn.count() > 0:
+                  print(f"  WAKE: {url}")
+                  await wake_btn.click()
+                  await page.wait_for_timeout(60000)
+              else:
+                  print(f"  OK (already awake): {url}")
+
+          async def main():
+              async with async_playwright() as p:
+                  browser = await p.chromium.launch()
+                  page = await browser.new_page()
+                  for url in URLS:
+                      try:
+                          await visit(page, url)
+                      except Exception as e:
+                          print(f"  ERROR {url}: {e}")
+                  await browser.close()
+
+          asyncio.run(main())
+          EOF
+          python wake.py
